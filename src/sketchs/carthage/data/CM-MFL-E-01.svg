@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="2200px" height="1700px" viewBox="0 0 2200 1700" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 51.3 (57544) - http://www.bohemiancoding.com/sketch -->
+    <title>CM-MFL-E-01</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="CM-MFL-E-01" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect id="str(3),farm" stroke="#D0021B" fill-rule="nonzero" x="193" y="152" width="174" height="69"></rect>
+        <rect id="int(2),week" stroke="#D0021B" fill-rule="nonzero" x="498" y="152" width="119" height="69"></rect>
+        <rect id="int(5),date" stroke="#D0021B" fill-rule="nonzero" x="823" y="152" width="269" height="69"></rect>
+        <g id="verticle" transform="translate(145.000000, 285.000000)" fill-rule="nonzero" stroke="#D0021B" stroke-linecap="square">
+            <path d="M1,0 L1,1201" id="int(6),female"></path>
+            <path d="M315,0 L315,1201" id="int(3),room"></path>
+            <path d="M480,0 L480,1201" id="nil"></path>
+            <path d="M512,0 L512,1201" id="int(3),stall"></path>
+            <path d="M677,0 L677,1201" id="int(2),ba"></path>
+            <path d="M794,0 L794,1201" id="int(2),sb"></path>
+            <path d="M911,0 L911,1201" id="int(2),mu"></path>
+            <path d="M1028,0 L1028,1201" id="int(2),gilts"></path>
+            <path d="M1149,0 L1149,1201" id="set,foster{minus}"></path>
+            <path d="M1202,0 L1202,1201" id="int(2),foster"></path>
+            <path d="M1316,0 L1316,1201" id="int(6),litter"></path>
+            <path d="M1643,0 L1643,1201" id="set,problems{assist}"></path>
+            <path d="M1797,0 L1797,1201" id="set,day{114,115|116,117}"></path>
+            <path d="M1946,0 L1946,1201" id="nil"></path>
+        </g>
+        <g id="horizon" transform="translate(146.000000, 284.000000)" fill-rule="nonzero" stroke="#D0021B" stroke-linecap="square">
+            <path d="M0,1 L1945,1" id="nil"></path>
+            <path d="M0,71 L1945,71" id="nil"></path>
+            <path d="M0,142 L1945,142" id="nil"></path>
+            <path d="M0,213 L1945,213" id="nil"></path>
+            <path d="M0,284 L1945,284" id="nil"></path>
+            <path d="M0,354 L1945,354" id="nil"></path>
+            <path d="M0,425 L1945,425" id="nil"></path>
+            <path d="M0,496 L1945,496" id="nil"></path>
+            <path d="M0,566 L1945,566" id="nil"></path>
+            <path d="M0,637 L1945,637" id="nil"></path>
+            <path d="M0,707 L1945,707" id="nil"></path>
+            <path d="M0,778 L1945,778" id="nil"></path>
+            <path d="M0,849 L1945,849" id="nil"></path>
+            <path d="M0,919 L1945,919" id="nil"></path>
+            <path d="M0,990 L1945,990" id="nil"></path>
+            <path d="M0,1060 L1945,1060" id="nil"></path>
+            <path d="M0,1131 L1945,1131" id="nil"></path>
+            <path d="M0,1202 L1945,1202" id="nil"></path>
+        </g>
+    </g>
+</svg>

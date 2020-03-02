@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1700px" height="2200px" viewBox="0 0 1700 2200" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 51.3 (57544) - http://www.bohemiancoding.com/sketch -->
+    <title>CM-BEL-E-00</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="CM-BEL-E-00" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect id="str(3),farm" stroke="#D0021B" fill-rule="nonzero" x="210" y="156" width="191" height="69"></rect>
+        <rect id="int(2),week" stroke="#D0021B" fill-rule="nonzero" x="690" y="156" width="134" height="69"></rect>
+        <rect id="int(5),date" stroke="#D0021B" fill-rule="nonzero" x="944" y="156" width="307" height="69"></rect>
+        <g id="horizon" transform="translate(150.000000, 274.000000)" fill-rule="nonzero" stroke="#D0021B" stroke-linecap="square">
+            <path d="M0,1 L917,1" id="nil"></path>
+            <path d="M0,72 L917,72" id="nil"></path>
+            <path d="M0,142 L917,142" id="nil"></path>
+            <path d="M0,212 L917,212" id="nil"></path>
+            <path d="M0,282 L917,282" id="nil"></path>
+            <path d="M0,352 L917,352" id="nil"></path>
+            <path d="M0,422 L917,422" id="nil"></path>
+            <path d="M0,493 L917,493" id="nil"></path>
+            <path d="M0,563 L917,563" id="nil"></path>
+            <path d="M0,633 L917,633" id="nil"></path>
+            <path d="M0,703 L917,703" id="nil"></path>
+            <path d="M0,773 L917,773" id="nil"></path>
+            <path d="M0,843 L917,843" id="nil"></path>
+            <path d="M0,913 L917,913" id="nil"></path>
+            <path d="M0,983 L917,983" id="nil"></path>
+            <path d="M0,1053 L917,1053" id="nil"></path>
+            <path d="M0,1123 L917,1123" id="nil"></path>
+            <path d="M0,1193 L917,1193" id="nil"></path>
+            <path d="M0,1263 L917,1263" id="nil"></path>
+            <path d="M0,1334 L917,1334" id="nil"></path>
+            <path d="M0,1403 L917,1403" id="nil"></path>
+            <path d="M0,1473 L917,1473" id="nil"></path>
+            <path d="M0,1543 L917,1543" id="nil"></path>
+            <path d="M0,1613 L917,1613" id="nil"></path>
+            <path d="M0,1683 L917,1683" id="nil"></path>
+            <path d="M0,1754 L917,1754" id="nil"></path>
+        </g>
+        <g id="verticle" transform="translate(149.000000, 275.000000)" fill-rule="nonzero" stroke="#D0021B" stroke-linecap="square">
+            <path d="M1,0 L1,1753" id="int(6),female"></path>
+            <path d="M375,0 L375,1753" id="set,hns{hns}"></path>
+            <path d="M504,0 L504,1753" id="set,abortion{abort,bta}"></path>
+            <path d="M665,0 L665,1753" id="set,pregnancy{pcn,pos|nip}"></path>
+            <path d="M918,0 L918,1753" id="nil"></path>
+        </g>
+    </g>
+</svg>
