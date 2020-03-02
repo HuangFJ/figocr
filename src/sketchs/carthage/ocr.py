@@ -1,5 +1,5 @@
 # -*- coding: utf8 -*-
-from ..base import Base
+from sketchs.base import Base
 from collections import OrderedDict
 import logging
 from pathlib import Path
@@ -9,13 +9,24 @@ from xml.dom import minidom
 import re
 from procedure.image import Image, threshold, roi_detect, max_width_poly, cv2_imshow
 import cv2
+from model.dataset import OCRDataset
+from model.nn import OCRModel
+from model.vocabulary import vocabulary, decode
+import torch
+from torchvision.transforms.functional import to_tensor
 
 
 class OCR(Base):
 
-    def __init__(self, model_path, dataset_dir):
+    def __init__(self, model_path='model/ocr1.pth', dataset_dir='dataset'):
         self.data_dir = Path(__file__).parent.joinpath('data')
+
         self.dataset_dir = dataset_dir
+
+        self.model = OCRModel(len(vocabulary))
+        self.model.load_state()
+
+        self.dataset = OCRDataset(False, self.model)
     
     def parse_target_csv(self, csv_file):
         """
@@ -77,7 +88,7 @@ class OCR(Base):
             'x_scales': None,
             'x_scales:expr': None,
         }
-        root = minidom.parse(svg_file).documentElement
+        root = minidom.parse(str(svg_file)).documentElement
         for node in root.childNodes:
             if node.nodeName == 'g':
                 for node in node.childNodes:
@@ -144,38 +155,8 @@ class OCR(Base):
             return 'CM-BEL-E-00'
         else:
             return None
-        
-    def recognize(self, image_file, frame_name=None):
-        # ######### for training ############
-        # dataset_list = []
-        # ######### for training ############
 
-        if frame_name is None:
-            frame_name = self.guess_frame_name(image_file)
-
-        if not frame_name:
-            logging.error(image_file)
-            raise 'please specific a frame name'
-
-        svg_file = self.data_dir.joinpath(f'{frame_name}.svg')
-        frame_file = self.data_dir.joinpath(f'{frame_name}.svg')
-        meta = self.parse_frame_svg(svg_file)
-
-        output_dir = Path(image_file).parent
-        image_name = Path(image_file).name
-
-        box_file = output_dir.joinpath(f'{image_name[:-4]}.box.png')
-        csv_file = output_dir.joinpath(f'{image_name[:-4]}.csv')
-        # ######### for training ############
-        # target_data = self.parse_target_csv(csv_file)
-        # ######### for training ############
-
-        image = Image.align_images(image_file, frame_file)
-        if image is None:
-            logging.error(image_file)
-            raise f'the input image {image_file} procedure fail'
-        image_copy = image.copy()
-        
+    def get_boxes(self, image, meta):
         table = image[meta['y_scales'][0] : meta['y_scales'][-1], meta['x_scales'][0] : meta['x_scales'][-1]]
         thresh = threshold(table)
 
@@ -219,6 +200,41 @@ class OCR(Base):
                 continue
 
             table_boxes[j+1] = row
+        
+        return table_boxes
+        
+    def recognize(self, image_file, frame_name=None):
+        # ######### for training ############
+        # dataset_list = []
+        # ######### for training ############
+
+        if frame_name is None:
+            frame_name = self.guess_frame_name(image_file)
+
+        if not frame_name:
+            logging.error(image_file)
+            raise 'please specific a frame name'
+
+        svg_file = self.data_dir.joinpath(f'{frame_name}.svg')
+        frame_file = self.data_dir.joinpath(f'{frame_name}.png')
+        meta = self.parse_frame_svg(svg_file)
+
+        output_dir = Path(image_file).parent
+        image_name = Path(image_file).name
+
+        box_file = output_dir.joinpath(f'{image_name[:-4]}.box.png')
+        csv_file = output_dir.joinpath(f'{image_name[:-4]}.csv')
+        # ######### for training ############
+        # target_data = self.parse_target_csv(csv_file)
+        # ######### for training ############
+
+        image = Image.align_images(image_file, frame_file)
+        if image is None:
+            logging.error(image_file)
+            raise f'the input image {image_file} procedure fail'
+        image_copy = image.copy()
+        
+        table_boxes = self.get_boxes(image, meta)
 
         csv_data = []
         for row_num, row in table_boxes.items():
@@ -247,15 +263,14 @@ class OCR(Base):
                         
                         cv2.rectangle(image_copy, (cell[0], cell[1]), (cell[0]+cell[2], cell[1]+cell[3]), (0, 0, 255), 1)
                         
-                        normal_roi = ocr_dataset.normalize(roi_target)
+                        normal_roi = self.dataset.normalize(roi_target)
                         normal_roi = to_tensor(normal_roi)
-                        # print(normal_roi.shape)
+                        logging.info(normal_roi.shape)
+
                         # cv2_imshow(np.transpose(normal_roi*255, (1, 2, 0)).numpy())
-                        # model = Model(len(characters), input_shape=normal_roi.shape).cuda()
-                        # model = torch.nn.DataParallel(model, device_ids=range(1))
-                        # model.load_state_dict(ocr_state_dict)
-                        output = ocr(normal_roi.unsqueeze(0).cuda())
-                        # print(output)
+                        output = self.model(normal_roi.unsqueeze(0))
+                        logging.info(output)
+
                         output_argmax = output.detach().permute(1, 0, 2).argmax(dim=-1)
                         pred = decode(output_argmax[0])
 
@@ -264,7 +279,7 @@ class OCR(Base):
         
         # image_copy = cv2.resize(image_copy, None, fx=0.7, fy=0.7, interpolation = cv2.INTER_CUBIC)
         # cv2_imshow(image_copy)
-        cv2.imwrite(box_file, image_copy)
+        cv2.imwrite(str(box_file), image_copy)
         with open(csv_file, 'w') as csv:
             for row in csv_data:
                 csv.write(','.join(map(lambda x:str(x), row)) + '\n')
@@ -277,15 +292,16 @@ class OCR(Base):
 
 if __name__ == '__main__':
     import os
+    logging.root.setLevel(logging.INFO)
 
     dirs = [
-        "/content/drive/My Drive/cv/images/CM-BEL-E-00",
-        "/content/drive/My Drive/cv/images/CM-BSR-E-00",
-        "/content/drive/My Drive/cv/images/CM-MBL-E-01",
-        "/content/drive/My Drive/cv/images/CM-MFL-E-01",
-        "/content/drive/My Drive/cv/images/CM-MWL-E-01",
-        "/content/drive/My Drive/cv/images/CM-PML-E-01",
-        "/content/drive/My Drive/cv/images/CM-TEL-E-00"
+        "/Users/jon/Documents/cv/data/CM-BEL-E-00",
+        # "/Users/jon/Documents/cv/data/CM-BSR-E-00",
+        # "/Users/jon/Documents/cv/data/CM-MBL-E-01",
+        # "/Users/jon/Documents/cv/data/CM-MFL-E-01",
+        # "/Users/jon/Documents/cv/data/CM-MWL-E-01",
+        # "/Users/jon/Documents/cv/data/CM-PML-E-01",
+        # "/Users/jon/Documents/cv/data/CM-TEL-E-00"
     ]
     image_num = 0
     for data_dir in dirs:
@@ -294,8 +310,10 @@ if __name__ == '__main__':
         for _, _, filenames in os.walk(data_dir):
 
             for filename in filenames:
-                # image_num += 1
-                # if image_num > 2:
-                #     break
+                image_num += 1
+                if image_num > 2:
+                    break
 
                 image_file = f'{data_dir}/{filename}'
+                ocr = OCR(None)
+                ocr.recognize(image_file)

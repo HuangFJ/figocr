@@ -404,6 +404,7 @@ class Image(object):
 
     @classmethod
     def get_frame(cls, frame_file):
+        frame_file = str(frame_file)
         frame = cls.frames.get(frame_file)
         if frame is None:
             img = cv2.imread(frame_file)
@@ -417,6 +418,7 @@ class Image(object):
     
     @classmethod
     def get_image(cls, image_file):
+        image_file = str(image_file)
         img = cv2.imread(image_file)
         vertexs = get_square_vertex(block_contours_kps(img))
         if vertexs is None:
