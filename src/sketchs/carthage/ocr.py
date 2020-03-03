@@ -9,24 +9,16 @@ from xml.dom import minidom
 import re
 from procedure.image import Image, threshold, roi_detect, max_width_poly, cv2_imshow
 import cv2
-from model.dataset import OCRDataset
-from model.nn import OCRModel
-from model.vocabulary import vocabulary, decode
-import torch
-from torchvision.transforms.functional import to_tensor
 
 
 class OCR(Base):
 
-    def __init__(self, model_path='model/ocr1.pth', dataset_dir='dataset'):
+    def __init__(self):
         self.data_dir = Path(__file__).parent.joinpath('data')
+        self.model = None
 
-        self.dataset_dir = dataset_dir
-
-        self.model = OCRModel(len(vocabulary))
-        self.model.load_state()
-
-        self.dataset = OCRDataset(False, self.model)
+    def load_model(self, model):
+        self.model = model
     
     def parse_target_csv(self, csv_file):
         """
@@ -157,6 +149,20 @@ class OCR(Base):
             return None
 
     def get_boxes(self, image, meta):
+        """
+        {
+            0: {'farm':pt, 'week':pt, 'date':pt},
+            1: { // row 1
+                1:pt, // column 1
+                2:pt, // column 2
+                3:pt, // column 3
+                ...
+            }, 
+            ...
+        }
+        pt is like :
+        (x, y, width, height)
+        """
         table = image[meta['y_scales'][0] : meta['y_scales'][-1], meta['x_scales'][0] : meta['x_scales'][-1]]
         thresh = threshold(table)
 
@@ -202,36 +208,105 @@ class OCR(Base):
             table_boxes[j+1] = row
         
         return table_boxes
-        
-    def recognize(self, image_file, frame_name=None):
-        # ######### for training ############
-        # dataset_list = []
-        # ######### for training ############
+
+    def deskew(self, image_file, frame_name=None):
+        """
+        afford raw image_file
+        generate intermediate aligned image and return it
+        """
+        output_dir = Path(image_file).parent
+        image_name = Path(image_file).name
+
+        align_file = output_dir.joinpath(f'{image_name[:-4]}.align.png')
+        if align_file.exists():
+            return cv2.imread(str(align_file))
 
         if frame_name is None:
             frame_name = self.guess_frame_name(image_file)
 
         if not frame_name:
-            logging.error(image_file)
-            raise 'please specific a frame name'
+            return None
+
+        frame_file = self.data_dir.joinpath(f'{frame_name}.png')
+
+        image = Image.align_images(image_file, frame_file)
+        if image is not None:
+            cv2.imwrite(str(align_file), image)
+
+        return image
+
+    def training(self, dataset_dir, image_file, frame_name=None):
+        """
+        afford the raw image_file and corrected csv file with same name in the same folder
+        generate dataset images and appended list in dataset_dir
+        """
+        output_dir = Path(image_file).parent
+        image_name = Path(image_file).name
 
         svg_file = self.data_dir.joinpath(f'{frame_name}.svg')
-        frame_file = self.data_dir.joinpath(f'{frame_name}.png')
         meta = self.parse_frame_svg(svg_file)
+
+        dataset_images_dir = Path(dataset_dir).joinpath('images')
+        dataset_list_file = Path(dataset_dir).joinpath('list.txt')
+        image = self.deskew(image_file, frame_name)
+        if image is None:
+            logging.error(image_file)
+            raise f'fail to process the input image {image_file}'
+
+        dataset_list = []
+        csv_file = output_dir.joinpath(f'{image_name[:-4]}.csv')
+        target_data = self.parse_target_csv(csv_file)
+
+        table_boxes = self.get_boxes(image, meta)
+
+        csv_data = []
+        for row_num, row in table_boxes.items():
+            if row:
+                row_data = []
+                if row_num > 0:
+                    row_data = [row_num]
+                csv_data.append(row_data)
+
+                for column, cell in row.items():
+                    row_data.append('')
+                    
+                    if row_num > 0:
+                        expr = meta['x_scales:expr'][column-1]
+                        if expr.startswith('set') or expr.startswith('nil'):
+                            continue
+                    if cell:
+                        roi_target = 255 - image[cell[1]: cell[1] + cell[3], cell[0]: cell[0] + cell[2]]
+
+                        datum = target_data[row_num][column]
+                        datum_file = f'{image_name}-{row_num}-{column}_{datum}.png'
+                        cv2.imwrite(f'{dataset_images_dir}/{datum_file}', roi_target)
+                        dataset_list.append(f'{datum_file}\t{datum}')
+                        
+        
+        with open(dataset_list_file, 'a') as list_file:
+            list_file.writelines(dataset_list)
+        
+    def recognize(self, image_file, frame_name=None):
+        """
+        afford the raw image_file 
+        generate image with box and csv file, both with same name in the same folder
+        """
+        if self.model is None:
+            raise f'you should load model first'
 
         output_dir = Path(image_file).parent
         image_name = Path(image_file).name
 
+        svg_file = self.data_dir.joinpath(f'{frame_name}.svg')
+        meta = self.parse_frame_svg(svg_file)
+
         box_file = output_dir.joinpath(f'{image_name[:-4]}.box.png')
         csv_file = output_dir.joinpath(f'{image_name[:-4]}.csv')
-        # ######### for training ############
-        # target_data = self.parse_target_csv(csv_file)
-        # ######### for training ############
 
-        image = Image.align_images(image_file, frame_file)
+        image = self.deskew(image_file, frame_name)
         if image is None:
             logging.error(image_file)
-            raise f'the input image {image_file} procedure fail'
+            raise f'fail to process the input image {image_file}'
         image_copy = image.copy()
         
         table_boxes = self.get_boxes(image, meta)
@@ -254,26 +329,9 @@ class OCR(Base):
                     if cell:
                         roi_target = 255 - image[cell[1]: cell[1] + cell[3], cell[0]: cell[0] + cell[2]]
 
-                        # ######### for training ############
-                        # datum = target_data[row_num][column]
-                        # datum_file = f'{image_name}-{row_num}-{column}_{datum}.png'
-                        # cv2.imwrite(f'{self.dataset_dir}/images/{datum_file}', roi_target)
-                        # dataset_list.append(f'{datum_file}\t{datum}')
-                        # ######### for training ############
-                        
                         cv2.rectangle(image_copy, (cell[0], cell[1]), (cell[0]+cell[2], cell[1]+cell[3]), (0, 0, 255), 1)
                         
-                        normal_roi = self.dataset.normalize(roi_target)
-                        normal_roi = to_tensor(normal_roi)
-                        logging.info(normal_roi.shape)
-
-                        # cv2_imshow(np.transpose(normal_roi*255, (1, 2, 0)).numpy())
-                        output = self.model(normal_roi.unsqueeze(0))
-                        logging.info(output)
-
-                        output_argmax = output.detach().permute(1, 0, 2).argmax(dim=-1)
-                        pred = decode(output_argmax[0])
-
+                        pred = self.model.predict(roi_target)
                         row_data[-1]=pred
                         # cv2.putText(image_copy, pred, (cell[0], cell[1] - 3), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
         
@@ -283,11 +341,6 @@ class OCR(Base):
         with open(csv_file, 'w') as csv:
             for row in csv_data:
                 csv.write(','.join(map(lambda x:str(x), row)) + '\n')
-
-        # ######### for training ############
-        # with open(f'{self.dataset_dir}/list.txt', 'a') as list_file:
-        #     list_file.writelines(dataset_list)
-        # ######### for training ############
 
 
 if __name__ == '__main__':
@@ -315,5 +368,6 @@ if __name__ == '__main__':
                     break
 
                 image_file = f'{data_dir}/{filename}'
-                ocr = OCR(None)
+                ocr = OCR()
+                ocr.load_model()
                 ocr.recognize(image_file)
