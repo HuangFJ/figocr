@@ -65,7 +65,7 @@ class OCRModel(object):
         self.net = OCRNet(self.n_classes, self.input_shape)
         self.criterion = nn.CTCLoss()
 
-        self.writer = SummaryWriter(f'logs/OCRModel')
+        self.writer = SummaryWriter(f'.logs/OCRModel')
         self.writer.add_graph(self.net, torch.zeros((1,) + self.input_shape))
 
         self.normalizer = Normalizer(self.input_shape[1], self.input_shape[2])
