@@ -6,7 +6,7 @@ from skimage.filters import threshold_otsu
 import logging
 
 
-def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
+def image_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
     dim = None
     (h, w) = image.shape[:2]
 
@@ -21,14 +21,14 @@ def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
         r = width / float(w)
         dim = (width, int(h * r))
 
-    resized = cv2.resize(image, dim, interpolation = inter)
+    resized = cv2.resize(image, dim, interpolation=inter)
 
     return resized
 
 
 def cv2_imshow(image):
     import matplotlib.pyplot as plt
-    plt.imshow(image, interpolation = 'bicubic')
+    plt.imshow(image, interpolation='bicubic')
     plt.show()
     # cv2.imshow('debug', image)
     # cv2.waitKey(0)
@@ -39,15 +39,15 @@ def cv2_imshow(image):
 def roi_detect(image, region, thresh_mean=None, trace=False):
     # (x, y, w, h)
     x, y, width, height = region
-    
+
     up_y_offset = int(height / 2)
     up_y = y - up_y_offset
     down_y_offset = height + int(height / 2)
     down_y = y + down_y_offset
 
-    roi = image[up_y : down_y, x : x + width]
+    roi = image[up_y: down_y, x: x + width]
     gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-    
+
     try:
         thresh_value = int(1*threshold_otsu(gray))
     except:
@@ -57,7 +57,7 @@ def roi_detect(image, region, thresh_mean=None, trace=False):
         thresh_value = min(thresh_value, thresh_mean)
     thresh = cv2.threshold(gray, thresh_value, 255, cv2.THRESH_BINARY_INV)[1]
     thresh = closing(thresh)
-    #垂直计算留白
+    # 垂直计算留白
     yitensity = np.sum(thresh, axis=1)
 
     middle = height
@@ -89,12 +89,12 @@ def roi_detect(image, region, thresh_mean=None, trace=False):
             down_blank_line += 1
         if down_blank_line > 3:
             break
-    
+
     y = up_y + up_y_offset
     height = down_y_offset - up_y_offset
 
     # 垂直裁剪
-    thresh = thresh[up_y_offset : down_y_offset, 0 : width]
+    thresh = thresh[up_y_offset: down_y_offset, 0: width]
     thresh = cv2.Canny(thresh, 100, 200, 3, L2gradient=True)
     thresh = cv2.dilate(thresh, None)
     # 水平计算留白
@@ -112,7 +112,8 @@ def roi_detect(image, region, thresh_mean=None, trace=False):
             x_suffix -= 1
 
     x_offset = x_offset - 5 if x_offset - 5 > 0 else 0
-    x_suffix = x_suffix + 5 if x_suffix + 5 < len(xitensity) else (len(xitensity) - 1)
+    x_suffix = x_suffix + 5 if x_suffix + \
+        5 < len(xitensity) else (len(xitensity) - 1)
 
     x = x + x_offset
     width = x_suffix - x_offset
@@ -127,14 +128,14 @@ def roi_detect(image, region, thresh_mean=None, trace=False):
     # cv2.rectangle(image, (x+cnt_x, y+cnt_y), (x+cnt_x + cnt_w-2, y+cnt_y + cnt_h-2), (0, 0, 0), 1)
     # cv2.rectangle(image, (x, y), (x + width-2, y + height-2), (0, 255, 0), 1)
     return x, y, width, height
-    
+
 
 def max_width_poly(image, region, thresh_mean=None):
     x, y, width, height = region
-    
-    roi = image[y : y + height, x : x + width]
+
+    roi = image[y: y + height, x: x + width]
     gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-    
+
     try:
         thresh_value = int(1*threshold_otsu(gray))
     except:
@@ -146,7 +147,8 @@ def max_width_poly(image, region, thresh_mean=None):
     thresh = cv2.Canny(thresh, 100, 200, 3, L2gradient=True)
     thresh = cv2.dilate(thresh, None)
 
-    cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+    cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL,
+                            cv2.CHAIN_APPROX_SIMPLE)[0]
     boxes = map(lambda cnt: cv2.boundingRect(cnt), cnts)
 
     boxes = sorted(boxes, key=lambda x: x[2])
@@ -183,30 +185,31 @@ def square_contours_kps(image, min_area=1800, min_density=None):
     #         l = linesP[i][0]
     #         cv2.line(gray, (l[0], l[1]), (l[2], l[3]), (0,0,255), 1, cv2.LINE_AA)
     # cv2_imshow(gray)
-    
+
     edges = closing(edges, square(3))
     # cv2_imshow(edges)
-    cnts, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cnts, _ = cv2.findContours(
+        edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     squares = []
     for cnt in cnts:
         approx = cv2.approxPolyDP(cnt, cv2.arcLength(cnt, True)*0.02, True)
         area = cv2.contourArea(approx)
 
-        # cv2.drawContours(image, [approx], -1, (0,0,255), 1) 
+        # cv2.drawContours(image, [approx], -1, (0,0,255), 1)
 
         if area < min_area:
             continue
 
-        # cv2.drawContours(image, [approx], -1, (0,0,255), 1) 
+        # cv2.drawContours(image, [approx], -1, (0,0,255), 1)
         # print(f'area: {area}, approx: {approx}')
 
         # for v in approx:
         #     cv2.circle(image, tuple(v[0]), 3, (0, 255, 255), -1)
 
         vertex_num = len(approx)
-        if vertex_num >= 4: #4个或多于4个顶点 and cv2.isContourConvex(approx):
-            for offset in range(0, vertex_num): #取连续的4个顶点
+        if vertex_num >= 4:  # 4个或多于4个顶点 and cv2.isContourConvex(approx):
+            for offset in range(0, vertex_num):  # 取连续的4个顶点
                 square_approx = []
                 for idx in range(0, 4):
                     sq_index = (offset+idx) % vertex_num
@@ -216,11 +219,12 @@ def square_contours_kps(image, min_area=1800, min_density=None):
                 maxCosine = 0
                 for j in range(2, 5):
                     square_pts = np.squeeze(square_approx)
-                    cosine = abs(consine(square_pts[j%4], square_pts[j-2], square_pts[j-1]))
+                    cosine = abs(
+                        consine(square_pts[j % 4], square_pts[j-2], square_pts[j-1]))
                     # print(cosine)
                     maxCosine = max(maxCosine, cosine)
 
-                if maxCosine < 0.20: # up and down 12 degree
+                if maxCosine < 0.20:  # up and down 12 degree
                     if vertex_num > 4:
                         area = cv2.contourArea(square_approx)
                         if area < min_area:
@@ -240,11 +244,11 @@ def square_contours_kps(image, min_area=1800, min_density=None):
                     squares.append((area, density, square_approx))
                     break
 
-    # cv2.drawContours(image, np.array([sq[1] for sq in squares]), -1, (0,0,255), 1) 
+    # cv2.drawContours(image, np.array([sq[1] for sq in squares]), -1, (0,0,255), 1)
     # cv2_imshow(image)
     if len(squares) < 4:
         return None
-    
+
     # sort by area
     squares.sort(key=lambda sq: -sq[0])
     squares = squares[:4]
@@ -269,38 +273,40 @@ def block_contours_kps(image, min_area=1800):
 
     result = None
     delta = 2
-    while result is None and delta < 5: #O(3)
+    while result is None and delta < 5:  # O(3)
         # blur it slightly
         ksize = 2 * delta + 1
         blur = cv2.GaussianBlur(gray, (ksize, ksize), delta)
         # cv2_imshow(blur)
 
-        # threshold the image 
+        # threshold the image
         thresh_value = threshold_otsu(blur)
         thresh_factor = 3
 
-        while result is None and thresh_factor > 0: #O(3*3)
-            thresh = cv2.threshold(blur, thresh_value/thresh_factor, 255, cv2.THRESH_BINARY_INV)[1]
+        while result is None and thresh_factor > 0:  # O(3*3)
+            thresh = cv2.threshold(
+                blur, thresh_value/thresh_factor, 255, cv2.THRESH_BINARY_INV)[1]
             # perform a series of erosions + dilations to remove any small regions of noise
             thresh = cv2.erode(thresh, None, iterations=2)
             thresh = cv2.dilate(thresh, None, iterations=2)
             # cv2_imshow(thresh)
 
             # find contours in thresholded image
-            cnts, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            cnts, _ = cv2.findContours(
+                thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             # image_copy = image.copy()
-            # cv2.drawContours(image_copy, cnts, -1, (0,0,255), 2) 
+            # cv2.drawContours(image_copy, cnts, -1, (0,0,255), 2)
             # cv2_imshow(image_copy)
-            
+
             # 没有连通域形状
             if len(cnts) < 4:
                 thresh_factor -= 1
                 continue
-            
+
             cnts = [(cnt, cv2.moments(cnt)) for cnt in cnts]
             cnts = [cnt for cnt in cnts if cnt[1]['m00'] > min_area/delta]
             # image_copy = image.copy()
-            # cv2.drawContours(image_copy, [cnt[0] for cnt in cnts], -1, (0,255,0), 1) 
+            # cv2.drawContours(image_copy, [cnt[0] for cnt in cnts], -1, (0,255,0), 1)
             # cv2_imshow(image_copy)
 
             # 找到形状面积超过设定值的形状
@@ -323,12 +329,12 @@ def block_contours_kps(image, min_area=1800):
             # image_copy = image.copy()
             # for index, (cnt, M) in enumerate(cnts_target):
             #     print(M['m00'])
-            #     cv2.drawContours(image_copy, [cnt], -1, (0,255,0), 1) 
+            #     cv2.drawContours(image_copy, [cnt], -1, (0,255,0), 1)
             #     cv2.circle(image_copy, tuple(result[index]), 5, (255, 255, 255), -1)
             # cv2_imshow(image_copy)
 
         delta += 1
-    
+
     logging.info(f'delta: {delta}, thresh factor: {thresh_factor}')
     return result
 
@@ -360,9 +366,9 @@ def get_square_vertex(kps):
     # dst = cv2.warpAffine(image,M,(cols,rows))
     # cv2_imshow(dst)
     degrees = [
-        angle_degree(extRight, extLeft, extTop), 
-        angle_degree(extTop, extBot, extRight), 
-        angle_degree(extRight, extLeft, extBot), 
+        angle_degree(extRight, extLeft, extTop),
+        angle_degree(extTop, extBot, extRight),
+        angle_degree(extRight, extLeft, extBot),
         angle_degree(extBot, extTop, extLeft)
     ]
     degree_max = max(degrees)
@@ -385,17 +391,20 @@ def draw_match_2_side(img1, kp1, img2, kp2, N):
     Returns:
         out_img (Hx2W(xC) array): output image with drawn matches
     """
-    kp_list = np.linspace(0, min(kp1.shape[0], kp2.shape[0])-1, N, dtype=np.int)
+    kp_list = np.linspace(
+        0, min(kp1.shape[0], kp2.shape[0])-1, N, dtype=np.int)
 
     # Convert keypoints to cv2.Keypoint object
     cv_kp1 = [cv2.KeyPoint(x=pt[0], y=pt[1], _size=1) for pt in kp1[kp_list]]
     cv_kp2 = [cv2.KeyPoint(x=pt[0], y=pt[1], _size=1) for pt in kp2[kp_list]]
 
     out_img = np.array([])
-    good_matches = [cv2.DMatch(_imgIdx=0, _queryIdx=idx, _trainIdx=idx,_distance=0) for idx in range(N)]
-    out_img = cv2.drawMatches(img1, cv_kp1, img2, cv_kp2, matches1to2=good_matches, outImg=out_img)
+    good_matches = [cv2.DMatch(
+        _imgIdx=0, _queryIdx=idx, _trainIdx=idx, _distance=0) for idx in range(N)]
+    out_img = cv2.drawMatches(
+        img1, cv_kp1, img2, cv_kp2, matches1to2=good_matches, outImg=out_img)
 
-    return out_img 
+    return out_img
 
 
 class Image(object):
@@ -415,7 +424,7 @@ class Image(object):
             cls.frames[frame_file] = frame
 
         return frame
-    
+
     @classmethod
     def get_image(cls, image_file):
         image_file = str(image_file)
@@ -442,7 +451,7 @@ class Image(object):
         if not mask_info:
             return None
         mask_img, mask_kps = mask_info
-        
+
         # Draw top matches
         image = draw_match_2_side(img, kps, mask_img, mask_kps, 4)
 
@@ -464,7 +473,7 @@ class Image(object):
 
 if __name__ == '__main__':
     logging.root.setLevel(logging.INFO)
-    
+
     bads = [
         '/Users/jon/Documents/cv/data/CM-MBL-E-01/OCR20170828_0020.tif',
         '/Users/jon/Documents/cv/data/CM-MBL-E-01/OCR2017091_0010.tif'

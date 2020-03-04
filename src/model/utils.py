@@ -35,24 +35,24 @@ def summary(model, input_size, batch_size=2):
                 params += torch.prod(torch.LongTensor(list(param.size())))
                 summary[m_key]['trainable'] = param.requires_grad
             summary[m_key]['nb_params'] = params
-            
-        if (not isinstance(module, nn.Sequential) and 
-            not isinstance(module, nn.ModuleList) and 
-            not (module == model)):
+
+        if (not isinstance(module, nn.Sequential) and
+            not isinstance(module, nn.ModuleList) and
+                not (module == model)):
             hooks.append(module.register_forward_hook(hook))
-            
+
     if torch.cuda.is_available():
         dtype = torch.cuda.FloatTensor
     else:
         dtype = torch.FloatTensor
-    
+
     # check if there are multiple inputs to the network
     if isinstance(input_size[0], (list, tuple)):
-        x = [Variable(torch.rand(batch_size,*in_size)).type(dtype) for in_size in input_size]
+        x = [Variable(torch.rand(batch_size, *in_size)).type(dtype)
+             for in_size in input_size]
     else:
-        x = Variable(torch.rand(batch_size,*input_size)).type(dtype)
-        
-        
+        x = Variable(torch.rand(batch_size, *input_size)).type(dtype)
+
     # print(type(x[0]))
     # create properties
     summary = OrderedDict()
@@ -67,14 +67,16 @@ def summary(model, input_size, batch_size=2):
         h.remove()
 
     print('----------------------------------------------------------------')
-    line_new = '{:>20}  {:>25} {:>15}'.format('Layer (type)', 'Output Shape', 'Param #')
+    line_new = '{:>20}  {:>25} {:>15}'.format(
+        'Layer (type)', 'Output Shape', 'Param #')
     print(line_new)
     print('================================================================')
     total_params = 0
     trainable_params = 0
     for layer in summary:
         # input_shape, output_shape, trainable, nb_params
-        line_new = '{:>20}  {:>25} {:>15}'.format(layer, str(summary[layer]['output_shape']), summary[layer]['nb_params'])
+        line_new = '{:>20}  {:>25} {:>15}'.format(layer, str(
+            summary[layer]['output_shape']), summary[layer]['nb_params'])
         total_params += summary[layer]['nb_params']
         if 'trainable' in summary[layer]:
             if summary[layer]['trainable'] == True:

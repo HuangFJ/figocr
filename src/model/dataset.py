@@ -41,13 +41,13 @@ class OCRDataset(Dataset):
         #         else:
         #             if line % 20 != 0:
         #                 continue
-                
+
         #         fn, label = l.strip().split('\t')
         #         fn = root.parent.joinpath('images', fn)
         #         self.items.append((str(fn), label))
 
         random.shuffle(self.items)
-    
+
     def __len__(self):
         return len(self.items)
 
@@ -57,6 +57,8 @@ class OCRDataset(Dataset):
 
         image = self.normalizer(cv2.imread(fn))
         target = torch.tensor(target, dtype=torch.long)
-        input_length = torch.full(size=(1, ), fill_value=self.input_length, dtype=torch.long)
-        target_length = torch.full(size=(1, ), fill_value=len(target), dtype=torch.long)
+        input_length = torch.full(
+            size=(1, ), fill_value=self.input_length, dtype=torch.long)
+        target_length = torch.full(
+            size=(1, ), fill_value=len(target), dtype=torch.long)
         return image, target, input_length, target_length
