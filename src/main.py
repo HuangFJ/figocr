@@ -1,6 +1,5 @@
 import logging
 from model.model import OCRModel
-from sketchs.ocr import OCR
 import cv2
 import argparse
 from pathlib import Path
