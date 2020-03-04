@@ -9,6 +9,7 @@ from xml.dom import minidom
 import re
 from procedure.image import Image, threshold, roi_detect, max_width_poly, cv2_imshow
 import cv2
+from model.model import OCRModel
 
 
 class OCR(Base):
@@ -240,6 +241,12 @@ class OCR(Base):
         afford the raw image_file and corrected csv file with same name in the same folder
         generate dataset images and appended list in dataset_dir
         """
+        if frame_name is None:
+            frame_name = self.guess_frame_name(image_file)
+
+        if not frame_name:
+            return None
+
         output_dir = Path(image_file).parent
         image_name = Path(image_file).name
 
@@ -294,6 +301,12 @@ class OCR(Base):
         if self.model is None:
             raise f'you should load model first'
 
+        if frame_name is None:
+            frame_name = self.guess_frame_name(image_file)
+
+        if not frame_name:
+            return None
+
         output_dir = Path(image_file).parent
         image_name = Path(image_file).name
 
@@ -346,6 +359,10 @@ class OCR(Base):
 if __name__ == '__main__':
     import os
     logging.root.setLevel(logging.INFO)
+    model = OCRModel()
+    model.load_checkpoint('model/ocr2.pth')
+    ocr = OCR()
+    ocr.load_model(model)
 
     dirs = [
         "/Users/jon/Documents/cv/data/CM-BEL-E-00",
@@ -363,11 +380,9 @@ if __name__ == '__main__':
         for _, _, filenames in os.walk(data_dir):
 
             for filename in filenames:
-                image_num += 1
-                if image_num > 2:
-                    break
-
-                image_file = f'{data_dir}/{filename}'
-                ocr = OCR()
-                ocr.load_model()
-                ocr.recognize(image_file)
+                # image_num += 1
+                # if image_num > 2:
+                #     break
+                if filename[-4:] == '.tif':
+                    image_file = f'{data_dir}/{filename}'
+                    ocr.recognize(image_file)

@@ -18,13 +18,16 @@ class OCRDataset(Dataset):
         self.input_length = input_length
 
         # mnist 数据集
-        root = Path('mnist_png/training')
-        if not train:
-            root = Path('mnist_png/testing')
-        for i in range(10):
-            filenames = glob.glob(str(root.joinpath(str(i), '*.png')))
-            for fn in filenames:
-                self.items.append((fn, str(i)))
+        # !wget https://github.com/myleott/mnist_png/blob/master/mnist_png.tar.gz?raw=true
+        # !mv mnist_png.tar.gz?raw=true mnist_png.tar.gz
+        # !tar -xzf mnist_png.tar.gz
+        # root = Path('mnist_png/training')
+        # if not train:
+        #     root = Path('mnist_png/testing')
+        # for i in range(10):
+        #     filenames = glob.glob(str(root.joinpath(str(i), '*.png')))
+        #     for fn in filenames:
+        #         self.items.append((fn, str(i)))
 
         # 本地数据集
         # root=Path('drive/My Drive/cv/images/dataset/labels.txt')

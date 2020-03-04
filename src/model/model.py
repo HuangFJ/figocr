@@ -71,8 +71,10 @@ class OCRModel(object):
         self.normalizer = Normalizer(self.input_shape[1], self.input_shape[2])
 
         if torch.cuda.is_available():
-            self.net = torch.nn.DataParallel(self.net.cuda())
+            self.net = self.net.cuda()
             self.criterion = self.criterion.cuda()
+        
+        self.net = torch.nn.DataParallel(self.net)
 
 
     def train(self, optimizer, epoch, dataloader):
@@ -195,7 +197,10 @@ class OCRModel(object):
 
 
     def load_checkpoint(self, checkpoint_path):
-        state = torch.load(checkpoint_path)
+        if torch.cuda.is_available():
+            state = torch.load(checkpoint_path)
+        else:
+            state = torch.load(checkpoint_path, map_location=torch.device('cpu'))
         self.net.load_state_dict(state['state_dict'])
         self.optimizer_state_dict = state['optimizer']
         logging.info('model loaded from %s' % checkpoint_path)
