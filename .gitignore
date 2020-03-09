@@ -2,8 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
-.logs
-/src/sketchs/
+.logs/
 
 # C extensions
 *.so
