@@ -36,6 +36,57 @@ def cv2_imshow(image):
     # cv2.waitKey(1)
 
 
+def split_image(image, thresh_mean=None):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    try:
+        thresh_value = int(1*threshold_otsu(gray))
+    except:
+        thresh_value = 255
+
+    if thresh_mean is not None:
+        thresh_value = min(thresh_value, thresh_mean)
+
+    thresh = cv2.threshold(gray, thresh_value, 255, cv2.THRESH_BINARY_INV)[1]
+    thresh = closing(thresh)
+    # cv2_imshow(thresh)
+
+    # find contours in thresholded image
+    cnts, _ = cv2.findContours(
+        thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    rects = [cv2.boundingRect(cnt) for cnt in cnts]
+    rects.sort(key=lambda x: x[0])
+
+    bound_rects = []
+    for x, _, w, _ in rects:
+        if not bound_rects:
+            bound_rects.append([x, x + w])
+        else:
+            pre_bound = bound_rects[-1]
+            if x - pre_bound[1] < 10:
+                pre_bound[1] = x
+            else:
+                pre_bound = [x, x + w]
+                bound_rects.append(pre_bound)
+
+    result = []
+    logging.info(f'split number: {bound_rects}')
+    for x1, x2 in bound_rects:
+        x1 = x1 - 4
+        if x1 < 0:
+            x1 = 0
+
+        x2 = x2 + 4
+        if x2 > image.shape[1]:
+            x2 = image.shape[1]
+
+        # cv2_imshow(image[:, x1:x2])
+        result.append(image[:, x1:x2])
+
+    return result
+
+
 def roi_detect(image, region, thresh_mean=None, trace=False):
     # (x, y, w, h)
     x, y, width, height = region
@@ -244,7 +295,7 @@ def square_contours_kps(image, min_area=1800, min_density=None):
                     squares.append((area, density, square_approx))
                     break
 
-    # cv2.drawContours(image, np.array([sq[1] for sq in squares]), -1, (0,0,255), 1)
+    # cv2.drawContours(image, np.array([sq[2] for sq in squares]), -1, (0,0,255), 1)
     # cv2_imshow(image)
     if len(squares) < 4:
         return None
@@ -287,8 +338,8 @@ def block_contours_kps(image, min_area=1800):
             thresh = cv2.threshold(
                 blur, thresh_value/thresh_factor, 255, cv2.THRESH_BINARY_INV)[1]
             # perform a series of erosions + dilations to remove any small regions of noise
-            thresh = cv2.erode(thresh, None, iterations=2)
-            thresh = cv2.dilate(thresh, None, iterations=2)
+            thresh = cv2.erode(thresh, None, iterations=3)
+            thresh = cv2.dilate(thresh, None, iterations=3)
             # cv2_imshow(thresh)
 
             # find contours in thresholded image
@@ -407,6 +458,44 @@ def draw_match_2_side(img1, kp1, img2, kp2, N):
     return out_img
 
 
+def detect_strong_points(image, thresh_mean):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    try:
+        thresh_value = int(1*threshold_otsu(gray))
+    except:
+        thresh_value = 255
+
+    if thresh_mean is not None:
+        thresh_value = min(thresh_value, thresh_mean)
+    thresh = cv2.threshold(gray, thresh_value, 255, cv2.THRESH_BINARY_INV)[1]
+    thresh = cv2.erode(thresh, None, iterations=2)
+    thresh = cv2.dilate(thresh, None, iterations=2)
+    # cv2_imshow(thresh)
+
+    # find contours in thresholded image
+    cnts, _ = cv2.findContours(
+        thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # image_copy = image.copy()
+    # cv2.drawContours(image_copy, cnts, -1, (0,0,255), 2)
+    # cv2_imshow(image_copy)
+    cnts = [(cnt, cv2.moments(cnt)) for cnt in cnts]
+    cnts = [cnt for cnt in cnts if cnt[1]['m00'] > 30]
+
+    cnts = sorted(cnts, key=lambda cnt: -cnt[1]['m00'])
+    cnts_target = cnts[:4]
+
+    result = []
+    for cnt, M in cnts_target:
+        cx = int(M['m10']/M['m00'])
+        cy = int(M['m01']/M['m00'])
+
+        # M['m00'] is the mass, [cx, cy] is the centroid
+        result.append([cx, cy])
+
+    return result
+
+
 class Image(object):
 
     frames = {}
@@ -469,26 +558,3 @@ class Image(object):
         result = cv2.warpPerspective(img, m, (w, h))
 
         return result
-
-
-if __name__ == '__main__':
-    logging.root.setLevel(logging.INFO)
-
-    bads = [
-        '/Users/jon/Documents/cv/data/CM-MBL-E-01/OCR20170828_0020.tif',
-        '/Users/jon/Documents/cv/data/CM-MBL-E-01/OCR2017091_0010.tif'
-    ]
-    goods = [
-        '/Users/jon/Documents/cv/data/CM-MBL-E-01/CCE2017068_0008.tif',
-        '/Users/jon/Documents/cv/data/CM-MBL-E-01/CCE2017068_0009.tif'
-    ]
-    for i in bads:
-        image, vertexs = Image.get_image(i)
-        extTop, extRight, extBot, extLeft = vertexs
-        ####### DEBUG #########
-        cv2.circle(image, tuple(extLeft), 2, (0, 0, 255), -1)
-        cv2.circle(image, tuple(extRight), 2, (0, 255, 0), -1)
-        cv2.circle(image, tuple(extTop), 2, (255, 0, 0), -1)
-        cv2.circle(image, tuple(extBot), 2, (255, 255, 0), -1)
-        cv2_imshow(image)
-        ####### DEBUG #########
