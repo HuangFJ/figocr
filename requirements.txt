@@ -1,4 +1,4 @@
-torch==2.2.0
+torch==2.13.0
 numpy
 opencv-python
 scikit-image
